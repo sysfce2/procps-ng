@@ -1,7 +1,7 @@
 /*
- * signames.c - ps signal names
+ * signames.c - Translate signal masks
  *
- * Copyright © 2023      Craig Small <csmall@dropbear.xyz>
+ * Copyright © 2023-2024 Craig Small <csmall@dropbear.xyz>
  * Copyright © 2020      Luis Chamberlain <mcgrof@kernel.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -38,8 +38,9 @@
 #include <sys/stat.h>
 #include <sys/utsname.h>
 
-#include "common.h"
 #include "signals.h"
+#include "misc.h"
+#include "procps-private.h"
 
 /* For libraries like musl */
 #ifndef __SIGRTMIN
@@ -130,7 +131,7 @@ static uint64_t mask_sig_val_num(int signum)
 	return ((uint64_t) 1 << (signum -1));
 }
 
-int print_signame(char *restrict const outbuf, const char *restrict const sig, const size_t len_in)
+PROCPS_EXPORT int procps_sigmask_names(char *restrict const outbuf, const char *restrict const sigmask, const size_t len_in)
 {
 	unsigned int i;
 	char abbrev[SIGNAME_MAX];
@@ -140,11 +141,14 @@ int print_signame(char *restrict const outbuf, const char *restrict const sig, c
 	uint64_t mask, mask_in;
 	uint64_t test_val = 0;
 
-        if (1 != sscanf(sig, "%" PRIu64, &mask_in))
-            return 0;
+        if (outbuf == NULL || sigmask == NULL || len_in == 0)
+            return -EINVAL;
+
+        if (1 != sscanf(sigmask, "%" PRIx64, &mask_in))
+            return -EINVAL;
         mask = mask_in;
 
-	for (i=1; i < NSIG; i++) {
+	for (i=0; i < NSIG; i++) {
 		test_val = mask_sig_val_num(i);
 		if (test_val & mask) {
                         n = strlen(sigstat_strsignal_abbrev(i, abbrev, SIGNAME_MAX));

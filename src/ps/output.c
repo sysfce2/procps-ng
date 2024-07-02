@@ -2,7 +2,7 @@
  * output.c - ps output definitions
  *
  * Copyright © 2015-2023 Jim Warner <james.warner@comcast.net
- * Copyright © 2004-2023 Craig Small <csmall@dropbear.xyz>
+ * Copyright © 2004-2024 Craig Small <csmall@dropbear.xyz>
  * Copyright © 2011      Lukas Nykryn <lnykryn@redhat.com>
  * Copyright © 1999-2004 Albert Cahalan
  *
@@ -1112,7 +1112,7 @@ static int help_pr_sig(char *restrict const outbuf, const char *restrict const s
   if (signal_names) {
     int rightward;
     rightward = max_rightward;
-    if ( (ret = print_signame(outbuf, sig, rightward)) > 0)
+    if ( (ret = procps_sigmask_names(outbuf, sig, rightward)) > 0)
         return ret;
   }
 
@@ -1151,6 +1151,14 @@ setREL1(SIGCATCH)
   return help_pr_sig(outbuf, rSv(SIGCATCH, str, pp));
 }
 
+static int pr_pcap(char *restrict const outbuf, const proc_t *restrict const pp){
+setREL1(CAPS_PERMITTED)
+  return snprintf(outbuf, COLWID, "%s", rSv(CAPS_PERMITTED, str, pp));
+}
+static int pr_pcaps(char *restrict const outbuf, const proc_t *restrict const pp){
+setREL1(CAPS_PERMITTED)
+  return procps_capability_names(outbuf, rSv(CAPS_PERMITTED, str, pp), COLWID);
+}
 static int pr_uss(char *restrict const outbuf, const proc_t *restrict const pp){
 setREL1(SMAP_PRV_TOTAL)
   return snprintf(outbuf, COLWID, "%lu", rSv(SMAP_PRV_TOTAL, ul_int, pp));
@@ -1785,6 +1793,8 @@ static const format_struct format_array[] = { /*
 {"p_ru",      "P_RU",    pr_nop,           PIDS_noop,                6,    BSD,  AN|RIGHT},
 {"paddr",     "PADDR",   pr_nop,           PIDS_noop,                6,    BSD,  AN|RIGHT},
 {"pagein",    "PAGEIN",  pr_majflt,        PIDS_FLT_MAJ,             6,    XXX,  AN|RIGHT},
+{"pcap",      "PCAP",    pr_pcap,          PIDS_CAPS_PERMITTED,     16,    LNX,  TO|RIGHT}, /*permitted caps*/
+{"pcaps",     "PCAPS",   pr_pcaps,         PIDS_CAPS_PERMITTED,     16,    LNX,  TO|RIGHT}, /*permitted caps*/
 {"pcpu",      "%CPU",    pr_pcpu,          PIDS_UTILIZATION,         4,    U98,  ET|RIGHT}, /*%cpu*/
 {"pending",   "PENDING", pr_sig,           PIDS_SIGNALS,             9,    BSD,  ET|SIGNAL}, /*sig*/
 {"pgid",      "PGID",    pr_pgid,          PIDS_ID_PGRP,             5,    U98,  PO|PIDMAX|RIGHT},
